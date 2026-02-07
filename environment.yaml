@@ -1,0 +1,32 @@
+name: DiscAR
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.12
+  - pillow=11.1.0
+  - pyyaml=6.0.2
+  - cuda-version=12.8
+  - cuda-cudart=12.8
+  - cuda-nvrtc=12.8
+  - cuda-cupti=12.8
+  - cuda-nvtx=12.8
+  - nccl>=2.29
+  - cudnn>=9.1
+  - pip
+  - pip:
+      - lightning==2.5.5
+      - wandb==0.23.0
+      - omegaconf==2.3.0
+      - scipy==1.16.3
+      - tqdm==4.67.1
+      - requests==2.32.5
+      - timm==0.9.12
+      - opencv-python==4.10.0.84
+      - click==8.3.0
+      - pandas==2.3.3
+      - flash-attn==2.8.3
+      - triton==3.4.0
+      - thop==0.1.1
+      - kornia==0.7.4

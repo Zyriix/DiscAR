@@ -1,0 +1,231 @@
+# Wandb 
+wandb_project: Training-ARModel
+wandb_name: VQ_Stage1
+
+# Dataset Information
+data_dir: ../data/cifar10  # Path to CIFAR-10 dataset
+xflip: True
+crop_type: center
+image_size: 32
+num_channels: 3
+num_classes: 11 # number of classes + 1 (uncond)
+patch_size: 4
+use_label: False
+patch_dim: ${eval:'${patch_size}*${patch_size}*${num_channels}'}
+x_len: ${eval:'int(${image_size}*${image_size}*${num_channels}/${patch_dim})'}
+diffusion_decoder: False
+
+# Training Hyperparameters
+train_ae: False
+train_ar: True
+phases: 100000:DO_PRIOR_AR:1
+batch_size: 512
+eval_batch_size: 400
+lr_enc: 1.5e-4
+lr_dec: 1.5e-4
+lr_ar: 1.5e-4
+lr_gan_loss: 1.5e-4
+weight_decay_enc: 0.0
+weight_decay_dec: 0.0
+weight_decay_ar: 0.0
+weight_decay_gan: 1e-4
+lr_enc_min: 3e-5
+lr_dec_min: 3e-5
+lr_ar_min: 3e-5
+lr_gan_loss_min: 3e-5
+use_tf32: True
+lr_scheduler: cosine
+drop: 0.0
+ar_drop: 0.0
+grad_clip: 0.0
+seed: 42
+beta1: 0.5
+beta2: 0.95
+ar_beta1: 0.5
+ar_beta2: 0.95
+label_drop_prob: 0.1
+precision: "bf16-mixed"
+replace_cur_with_ema: False
+num_workers: 4
+devices: 8
+reverse_t: False
+
+use_noise_query: False
+use_tail_dropout: False
+l2_v_target: False
+tail_dropout_t2k: 1.0
+tied_timestep: False
+
+# DiTi (Piecewise Scheduler) Config
+time_stages: "200,400,600,800,1000"
+k_per_stage: "192,184,72,48,16"
+
+load_ar_model: False
+load_ar_model_ema: False
+
+use_l1_loss: True
+use_l2_loss: True
+use_lpips_loss: True
+use_gan_loss: False
+disc_adaptive_weight: False
+
+lpips_weight: 0.1
+gan_G_weight: 0.1
+l1_weight: 0.1
+l2_weight: 1.0
+
+gan_start: 5000
+tail_dropout_start: 0
+tail_dropout_p: 0.5
+
+torch_compile: True
+compile_ae: True
+compile_ar: True
+compile_gan: False
+debug_grad: False
+
+# EMA and Sampling Hyperparameters
+ar_ema_halflife: 2500
+ae_ema_halflife: 1000
+ema_sampling: False
+ema_reconstruction: True
+cache_kv: True
+topK: 0.0
+topP: 0.0
+
+cfg: 0.0
+cfg_schedule: cosine
+cfg_power: 2.75
+
+temperature: 1.0
+
+# Evaluation
+eval_data_dir: ../data/cifar10  # Path to evaluation dataset
+eval_crop_type: center
+eval_fid_ref_path: ./refs/cifar10-32x32.npz  # Path to FID reference statistics
+
+# Logging & Checkpointing
+save_dir: ./logs/${wandb_name}  # Directory to save checkpoints and logs
+log_freq: 25
+visualize_freq: 5000
+visualize_img_num: 8
+ckpt_freq: 25000
+eval_freq: 25000
+save_ckpt: True
+ar_ckpt_path: ""
+ae_ckpt_path: ""
+resume_optimizer: False
+
+# General Model Information
+cond_emb_dim: 32
+z_len: 64
+z_dim: 12
+vq_type: VQ
+codebook_size: 1024
+norm_layer: RMSNorm
+ffn_type: geglu
+context_type: concat
+hidden_dim: 512
+
+# AE Loss Configuration
+
+
+# Model Configuration
+Encoder:
+    input_dim: ${patch_dim} 
+    output_dim: ${hidden_dim} # quant dim
+    cond_dim: ${cond_emb_dim}
+    cond_input_dim: ${num_classes}
+    max_seq_len: ${z_len}
+    ctx_max_seq_len: ${x_len}
+    dim: ${hidden_dim}
+    layer_num: 10
+    mlp_ratio: 4.
+    heads: 8
+    emb_dropout: 0.0
+    drop: ${drop}
+    l2_norm: False
+    context_type: ${context_type}
+    rope: False
+    abs_pos: True
+    causal: False
+    out_layer: False
+    out_act: False
+    norm_layer: ${norm_layer}
+    ffn_type: ${ffn_type}
+
+
+Quantizer:
+    codebook_size: ${codebook_size}
+    z_dim: ${z_dim}
+    dim: ${hidden_dim}
+    length: ${z_len}
+    cond_dim: ${cond_emb_dim}
+    cond_affine_norm: False
+    vq_beta: 0.25
+    use_norm: True
+    norm_layer: l2
+    ffn_type: ${ffn_type}
+    temperature: 1.0
+
+Decoder:
+    input_dim: ${patch_dim} 
+    ctx_input_dim: ${z_dim}
+    output_dim: ${patch_dim}
+    cond_dim: ${cond_emb_dim}
+    cond_input_dim: ${num_classes}
+    max_seq_len: ${x_len}
+    ctx_max_seq_len: ${z_len}
+    dim: ${hidden_dim}
+    layer_num: 10
+    heads: 8
+    out_act: False
+    emb_dropout: 0.0
+    drop: ${drop}
+    l2_norm: False
+    context_type: ${context_type}
+    rope: False
+    abs_pos: True
+    causal: False
+    norm_layer: ${norm_layer}
+    ffn_type: ${ffn_type}
+    mlp_ratio: 4.
+    zero_out: True
+    query_type: learnable
+
+ARModel:
+    input_dim: ${hidden_dim}
+    output_dim: ${codebook_size}
+    max_seq_len: ${z_len}
+    cond_dim: ${cond_emb_dim}
+    cond_input_dim: ${num_classes}
+
+    dim: ${hidden_dim}
+    layer_num: 13
+    heads: 8
+    emb_dropout: 0.0
+    drop: ${ar_drop}
+    l2_norm: False
+    context_type: none
+    rope: False
+    abs_pos: True
+    causal: True
+    out_act: False
+    norm_layer: ${norm_layer}
+    ffn_type: ${ffn_type}
+    mlp_ratio: 4
+    zero_out: False
+    temperature: 1.0
+
+
+GANLoss:
+    disc_loss: vanilla
+    disc_dim: 64
+    disc_type: patchgan
+    image_size: 32
+    disc_num_layers: 3
+    disc_in_channels: 3
+    gen_adv_loss: vanilla
+    lecam_loss_weight: 0.05
+    norm_type: bn
+    aug_prob: 1.0
